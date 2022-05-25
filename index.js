@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -19,12 +20,22 @@ async function run() {
     try {
         await client.connect();
         const toolsCollection = client.db("long-drive").collection("tools");
+        // get all tools
         app.get("/tool", async (req, res) => {
             const query = {};
             const cursor = toolsCollection.find(query);
             const tools = await cursor.toArray();
             res.send(tools);
         });
+        // get single tool
+        app.get("/purchase/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const purchase = await toolsCollection.findOne(query);
+            res.send(purchase);
+        })
+
+
     } finally {
     }
 }
