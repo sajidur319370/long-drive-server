@@ -32,28 +32,14 @@ function verifyJWT(req, res, next) {
 }
 // ========Token========
 
-
-
 async function run() {
     try {
         await client.connect();
         const toolsCollection = client.db("long-drive").collection("tools");
         const usersCollection = client.db("long-drive").collection("users");
-        // get all tools
-        app.get("/tool", async (req, res) => {
-            const query = {};
-            const cursor = toolsCollection.find(query);
-            const tools = await cursor.toArray();
-            res.send(tools);
-        });
-        // get single tool
-        app.get("/purchase/:id", async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: ObjectId(id) }
-            const purchase = await toolsCollection.findOne(query);
-            res.send(purchase);
-        })
-        // ========TokenUser========
+        const orderCollection = client.db("long-drive").collection("orders");
+
+        // ==TokenUser==
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -70,9 +56,30 @@ async function run() {
             );
             res.send({ result, token });
         });
+        // ==TokenUser==
 
-        // ========TokenUser========
+        // get all tools
+        app.get("/tool", async (req, res) => {
+            const query = {};
+            const cursor = toolsCollection.find(query);
+            const tools = await cursor.toArray();
+            res.send(tools);
+        });
 
+        // get single tool
+        app.get("/purchase/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const purchase = await toolsCollection.findOne(query);
+            res.send(purchase);
+        });
+
+        //Post Order in db
+        app.post("/order", async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            return res.send(result);
+        });
     } finally {
     }
 }
