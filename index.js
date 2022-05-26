@@ -80,6 +80,18 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             return res.send(result);
         });
+        // get order from db
+        app.get("/order", async (req, res) => {
+            const orders = await orderCollection.find().toArray();
+            res.send(orders);
+        });
+        // Delete order from db
+        app.delete("/order/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(filter);
+            res.send(result);
+        });
     } finally {
     }
 }
