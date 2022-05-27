@@ -42,10 +42,10 @@ async function run() {
         const orderCollection = client.db("long-drive").collection("orders");
         const paymentsCollection = client.db("long-drive").collection("payments");
 
-        // ==TokenUser==
+        // ==Veryfy Token==
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email;
-            const user = req.body;
+            const user = req.body.user.user;
             const filter = { email: email };
             const option = { upsert: true };
             const updateDoc = {
@@ -59,10 +59,54 @@ async function run() {
             );
             res.send({ result, token });
         });
-        // ==TokenUser==
+        // ==Verify Token==
+
+
+
+        // ===Admin verify===
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({
+                email: requester,
+            });
+            if (requesterAccount.role === "admin") {
+                next();
+            } else {
+                return res.status(403).send({ message: "Forbidden Access" });
+            }
+        };
+        // ===Admin verify===
+
+
+        //get Admin
+        app.get("/admin/:email", async (req, res) => {
+            const email = req.params.email;
+            const user = await usersCollection.findOne({ email: email });
+            const isAdmin = user.role === "admin";
+            res.send({ admin: isAdmin });
+        });
+
+
+
+        // ===========Make Admin============
+        app.put("/user/admin/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: { role: "admin" },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            return res.send(result);
+        });
+
+        // get all users
+        app.get("/user", verifyJWT, async (req, res) => {
+            const users = await usersCollection.find().toArray();
+            res.send(users);
+        });
 
         // ===Payment Intent===
-        app.post("/create-payment-intent", async (req, res) => {
+        app.post("/create-payment-intent", verifyJWT, async (req, res) => {
             const orderPay = req.body;
             const price = parseInt(orderPay.price) * parseInt(orderPay.orderQuantity);
             const amount = price * 100;
@@ -98,9 +142,19 @@ async function run() {
             return res.send(result);
         });
         // get order from db
-        app.get("/order", async (req, res) => {
-            const orders = await orderCollection.find().toArray();
-            res.send(orders);
+        app.get("/order", verifyJWT, async (req, res) => {
+
+            const userEmail = req.query.userEmail;
+            const decodedEmail = req.decoded.email;
+
+            if (userEmail === decodedEmail) {
+                const query = { userEmail: userEmail };
+                const orders = await orderCollection.find(query).toArray();
+                return res.send(orders);
+            } else {
+                return res.status(403).send({ message: "Forbidden Access" });
+            }
+
         });
         // get single ordered tool
         app.get("/order/:id", async (req, res) => {
@@ -135,6 +189,8 @@ async function run() {
             );
             res.send(updateDoc);
         });
+
+
     } finally {
     }
 }
