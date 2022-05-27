@@ -134,6 +134,13 @@ async function run() {
             const purchase = await toolsCollection.findOne(query);
             res.send(purchase);
         });
+        // Delete tools from db
+        app.delete("/tool/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await toolsCollection.deleteOne(filter);
+            res.send(result);
+        });
 
         //Post Order in db
         app.post("/order", async (req, res) => {
