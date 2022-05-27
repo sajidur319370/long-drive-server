@@ -126,6 +126,12 @@ async function run() {
             const tools = await cursor.toArray();
             res.send(tools);
         });
+        // ========add new tool============
+        app.post("/tool", async (req, res) => {
+            const tool = req.body;
+            const tools = await toolsCollection.insertOne(tool);
+            return res.send(tools);
+        });
 
         // get single tool
         app.get("/purchase/:id", async (req, res) => {
