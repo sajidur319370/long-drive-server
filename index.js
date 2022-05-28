@@ -66,7 +66,7 @@ async function run() {
         // ===Admin verify===
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({
+            const requesterAccount = await usersCollection.findOne({
                 email: requester,
             });
             if (requesterAccount.role === "admin") {
@@ -169,6 +169,19 @@ async function run() {
             }
 
         });
+        // get all orders from db to manage orders
+        app.get("/manage", verifyJWT, verifyAdmin, async (req, res) => {
+            const query = {};
+            const orders = await orderCollection.find(query).toArray();
+            res.send(orders);
+        });
+        // delete orders from manage orders
+        app.delete("/manage/:id", verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(filter);
+            res.send(result);
+        });
         // get single ordered tool
         app.get("/order/:id", async (req, res) => {
             const id = req.params.id;
@@ -193,6 +206,7 @@ async function run() {
                 $set: {
                     paid: true,
                     transactionId: payment.transactionId,
+                    status: "pending"
                 },
             };
             const result = await paymentsCollection.insertOne(payment);
