@@ -41,6 +41,7 @@ async function run() {
         const usersCollection = client.db("long-drive").collection("users");
         const ordersCollection = client.db("long-drive").collection("orders");
         const paymentsCollection = client.db("long-drive").collection("payments");
+        const reviewsCollection = client.db("long-drive").collection("reviews");
 
         // ==Veryfy Token==
         app.put("/user/:email", async (req, res) => {
@@ -150,6 +151,19 @@ async function run() {
             const tool = req.body;
             const tools = await toolsCollection.insertOne(tool);
             return res.send(tools);
+        });
+        // add review
+        app.post("/review", verifyJWT, async (req, res) => {
+            const review = req.body;
+            const reviews = await reviewsCollection.insertOne(review);
+            return res.send(reviews);
+        });
+        // get review
+        app.get("/review", async (req, res) => {
+            const query = {};
+            const cursor = reviewsCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
         });
 
         // get single tool
