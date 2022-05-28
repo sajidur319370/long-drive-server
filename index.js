@@ -39,7 +39,7 @@ async function run() {
         await client.connect();
         const toolsCollection = client.db("long-drive").collection("tools");
         const usersCollection = client.db("long-drive").collection("users");
-        const orderCollection = client.db("long-drive").collection("orders");
+        const ordersCollection = client.db("long-drive").collection("orders");
         const paymentsCollection = client.db("long-drive").collection("payments");
 
         // ==Veryfy Token==
@@ -104,6 +104,25 @@ async function run() {
             const users = await usersCollection.find().toArray();
             res.send(users);
         });
+        // Update  user profile
+        app.put("/profile/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const profile = req.body;
+            const filter = { email: email };
+            const option = { upsert: true };
+            const updateDoc = {
+                $set: profile,
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc, option);
+            res.send(result);
+        });
+        // get individual user profile
+        app.get("/profile/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const result = await usersCollection.findOne(filter);
+            res.send(result);
+        });
 
         // ===Payment Intent===
         app.post("/create-payment-intent", verifyJWT, async (req, res) => {
@@ -151,7 +170,7 @@ async function run() {
         //Post Order in db
         app.post("/order", async (req, res) => {
             const order = req.body;
-            const result = await orderCollection.insertOne(order);
+            const result = await ordersCollection.insertOne(order);
             return res.send(result);
         });
         // get order from db
@@ -162,7 +181,7 @@ async function run() {
 
             if (userEmail === decodedEmail) {
                 const query = { userEmail: userEmail };
-                const orders = await orderCollection.find(query).toArray();
+                const orders = await ordersCollection.find(query).toArray();
                 return res.send(orders);
             } else {
                 return res.status(403).send({ message: "Forbidden Access" });
@@ -172,28 +191,45 @@ async function run() {
         // get all orders from db to manage orders
         app.get("/manage", verifyJWT, verifyAdmin, async (req, res) => {
             const query = {};
-            const orders = await orderCollection.find(query).toArray();
+            const orders = await ordersCollection.find(query).toArray();
             res.send(orders);
         });
         // delete orders from manage orders
-        app.delete("/manage/:id", verifyJWT, async (req, res) => {
+        app.delete("/manage/:id", verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
-            const result = await orderCollection.deleteOne(filter);
+            const result = await ordersCollection.deleteOne(filter);
+            res.send(result);
+        });
+        // Update orders from manage orders
+        app.put("/manage/:id", verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    status: "shipped"
+                },
+            };
+            const result = await ordersCollection.updateOne(
+                filter,
+                updateDoc,
+                options
+            );
             res.send(result);
         });
         // get single ordered tool
         app.get("/order/:id", async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
-            const orders = await orderCollection.findOne(filter);
+            const orders = await ordersCollection.findOne(filter);
             res.send(orders);
         });
         // Delete order from db
         app.delete("/order/:id", async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
-            const result = await orderCollection.deleteOne(filter);
+            const result = await ordersCollection.deleteOne(filter);
             res.send(result);
         });
 
@@ -210,7 +246,7 @@ async function run() {
                 },
             };
             const result = await paymentsCollection.insertOne(payment);
-            const updatedOrder = await orderCollection.updateOne(
+            const updatedOrder = await ordersCollection.updateOne(
                 filter,
                 updateDoc
             );
