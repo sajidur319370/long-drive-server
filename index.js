@@ -146,11 +146,18 @@ async function run() {
             const tools = await cursor.toArray();
             res.send(tools);
         });
-        // ========add new tool============
-        app.post("/tool", async (req, res) => {
+        // ========add new tool in db by admin============
+        app.post("/tool", verifyJWT, verifyAdmin, async (req, res) => {
             const tool = req.body;
             const tools = await toolsCollection.insertOne(tool);
             return res.send(tools);
+        });
+        // Delete tools from db by admin
+        app.delete("/tool/:id", verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await toolsCollection.deleteOne(filter);
+            res.send(result);
         });
         // add review
         app.post("/review", verifyJWT, async (req, res) => {
@@ -166,23 +173,15 @@ async function run() {
             res.send(reviews);
         });
 
-        // get single tool
-        app.get("/purchase/:id", async (req, res) => {
+        // get single tool for purchase
+        app.get("/purchase/:id", verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const purchase = await toolsCollection.findOne(query);
             res.send(purchase);
         });
-        // Delete tools from db
-        app.delete("/tool/:id", async (req, res) => {
-            const id = req.params.id;
-            const filter = { _id: ObjectId(id) };
-            const result = await toolsCollection.deleteOne(filter);
-            res.send(result);
-        });
-
         //Post Order in db
-        app.post("/order", async (req, res) => {
+        app.post("/order", verifyJWT, async (req, res) => {
             const order = req.body;
             const result = await ordersCollection.insertOne(order);
             return res.send(result);
@@ -233,14 +232,14 @@ async function run() {
             res.send(result);
         });
         // get single ordered tool
-        app.get("/order/:id", async (req, res) => {
+        app.get("/order/:id", verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const orders = await ordersCollection.findOne(filter);
             res.send(orders);
         });
         // Delete order from db
-        app.delete("/order/:id", async (req, res) => {
+        app.delete("/order/:id", verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await ordersCollection.deleteOne(filter);
@@ -248,7 +247,7 @@ async function run() {
         });
 
         // set payment status
-        app.patch("/order/:id", async (req, res) => {
+        app.patch("/order/:id", verifyJWT, async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
             const filter = { _id: ObjectId(id) };
